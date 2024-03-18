@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const nodemailer = require('nodemailer');
+const morgan = require('morgan');
 
 const app = express();
 const ENV = process.env.ENVIRONMENT || 'TEST';
@@ -17,6 +18,11 @@ app.enable('trust proxy');
 app.disable('x-powered-by');
 app.use(express.json());
 app.use(helmet());
+app.use(
+	morgan(
+	  '[ :method :url ] ~:status | :date[web] | :total-time[digits] ms | IP :remote-addr | :user-agent'
+	)
+  )
 
 // 10 requests per minute
 const rootLimiter = rateLimit({
