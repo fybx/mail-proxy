@@ -12,17 +12,20 @@ const SENDER_PASS = process.env.EMAIL_PASSWORD;
 const SERV_HOST = process.env.EMAIL_HOST;
 const SERV_PORT = process.env.EMAIL_PORT;
 
+const recipients = process.env.ACCESS_KEYS.split(',').map((whole) => {
+	return {
+		key: whole.split(':')[0],
+		recipient: whole.split(':')[1],
+	};
+});
+
 const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',');
 
 app.enable('trust proxy');
 app.disable('x-powered-by');
 app.use(express.json());
 app.use(helmet());
-app.use(
-	morgan(
-	  '[ :method :url ] ~:status | :date[web] | :total-time[digits] ms | IP :remote-addr | :user-agent'
-	)
-  )
+app.use(morgan('[ :method :url ] ~:status | :date[web] | :total-time[digits] ms | IP :remote-addr | :user-agent'));
 
 // 10 requests per minute
 const rootLimiter = rateLimit({
@@ -46,11 +49,11 @@ app.use(
 );
 
 app.use((req, res, next) => {
-    const origin = req.headers.origin;
-    if (origin && allowedOrigins.includes(origin)) {
-        next();
-    } else {
-        res.status(403).json({ success: false, message: `Origin ${origin} is not allowed` });
+	const origin = req.headers.origin;
+	if (origin && allowedOrigins.includes(origin)) {
+		next();
+	} else {
+		res.status(403).json({ success: false, message: `Origin ${origin} is not allowed` });
 		console.warn(`Connection refused: origin ${origin} is not allowed`);
 	}
 });
@@ -72,12 +75,14 @@ const mailRouteLimiter = rateLimit({
 });
 
 app.post('/api/mail', mailRouteLimiter, (req, res) => {
-	const { to, subject, text, access } = req.body;
+	const { subject, text, access } = req.body;
+	let to;
 
-	if (!process.env.ACCESS_KEYS.split(',').includes(access)) {
-		return res.status(403).json({ success: false, message: 'Access denied!' });
+	if (!recipients.some((recipient) => recipient.key === access)) {
 		console.log('Access denied!');
-	}
+		return res.status(403).json({ success: false, message: 'Access denied!' });
+	} else
+		to = recipients.find((recipient) => recipient.key === access).recipient;
 
 	const mail = {
 		from: `"Arbeit Mail Hizmeti" <${SENDER_EMAIL}>`,
@@ -94,7 +99,7 @@ app.post('/api/mail', mailRouteLimiter, (req, res) => {
 		} else {
 			console.error('Failed to send:', mail);
 			res.status(500).json({ success: false, message: 'Mail could not be sent!' });
-		};
+		}
 	} else res.status(200).json(mail);
 });
 
