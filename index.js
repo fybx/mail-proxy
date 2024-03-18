@@ -18,6 +18,14 @@ app.disable('x-powered-by');
 app.use(express.json());
 app.use(helmet());
 
+// 10 requests per minute
+const rootLimiter = rateLimit({
+	windowMs: 60 * 1000,
+	max: 10,
+});
+
+app.use('/', rootLimiter);
+
 app.use(
 	cors({
 		origin: function (origin, callback) {
@@ -40,12 +48,6 @@ app.use((req, res, next) => {
 	}
 });
 
-// 2 requests per 5 minutes
-const limiter = rateLimit({
-	windowMs: 5 * 60 * 1000,
-	max: 2,
-});
-
 const transporter = nodemailer.createTransport({
 	host: SERV_HOST,
 	port: SERV_PORT,
@@ -56,7 +58,13 @@ const transporter = nodemailer.createTransport({
 	},
 });
 
-app.post('/api/mail', limiter, (req, res) => {
+// 2 requests per 5 minutes
+const mailRouteLimiter = rateLimit({
+	windowMs: 5 * 60 * 1000,
+	max: 2,
+});
+
+app.post('/api/mail', mailRouteLimiter, (req, res) => {
 	const { to, subject, text } = req.body;
 
 	const mail = {
