@@ -50,7 +50,6 @@ const transporter = nodemailer.createTransport({
 app.post('/api/mail', (req, res) => {
 	const { to, subject, text } = req.body;
 
-	let status = false;
 	const mail = {
 		from: `"Arbeit Mail Hizmeti" <${SENDER_EMAIL}>`,
 		to,
@@ -60,8 +59,13 @@ app.post('/api/mail', (req, res) => {
 	};
 
 	if (ENV === 'PROD') {
-		if (transporter.sendMail(mail)) res.status(200).json({ message: 'Mail sent successfully!' });
-		else res.status(500).json({ message: 'Mail could not be sent!' });
+		if (transporter.sendMail(mail)) {
+			console.info('Sent something:', mail);
+			res.status(200).json({ message: 'Mail sent successfully!' });
+		} else {
+			console.error('Failed to send:', mail);
+			res.status(500).json({ message: 'Mail could not be sent!' });
+		};
 	} else res.status(200).json(mail);
 });
 
