@@ -13,6 +13,7 @@ const SERV_PORT = process.env.EMAIL_PORT;
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',');
 
+app.enable('trust proxy');
 app.disable('x-powered-by');
 app.use(express.json());
 app.use(helmet());
