@@ -30,12 +30,14 @@ app.use(
 	})
 );
 
-app.use((err, req, res, next) => {
-    if (err.message.startsWith('Origin')) {
-        res.status(403).json({ error: err.message });
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    if (origin && allowedOrigins.includes(origin)) {
+        next();
     } else {
-        next(err);
-    }
+        res.status(403).json({ success: false, message: `Origin ${origin} is not allowed` });
+		console.warn(`Connection refused: origin ${origin} is not allowed`);
+	}
 });
 
 // 2 requests per 5 minutes
