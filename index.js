@@ -29,6 +29,14 @@ app.use(
 	})
 );
 
+app.use((err, req, res, next) => {
+    if (err.message.startsWith('Origin')) {
+        res.status(403).json({ error: err.message });
+    } else {
+        next(err);
+    }
+});
+
 // 2 requests per 5 minutes
 const limiter = rateLimit({
 	windowMs: 5 * 60 * 1000,
