@@ -35,8 +35,6 @@ const limiter = rateLimit({
 	max: 2,
 });
 
-app.use(limiter);
-
 const transporter = nodemailer.createTransport({
 	host: SERV_HOST,
 	port: SERV_PORT,
@@ -47,7 +45,7 @@ const transporter = nodemailer.createTransport({
 	},
 });
 
-app.post('/api/mail', (req, res) => {
+app.post('/api/mail', limiter, (req, res) => {
 	const { to, subject, text } = req.body;
 
 	const mail = {
@@ -61,10 +59,10 @@ app.post('/api/mail', (req, res) => {
 	if (ENV === 'PROD') {
 		if (transporter.sendMail(mail)) {
 			console.info('Sent something:', mail);
-			res.status(200).json({ message: 'Mail sent successfully!' });
+			res.status(200).json({ success: true, message: 'Mail sent successfully!' });
 		} else {
 			console.error('Failed to send:', mail);
-			res.status(500).json({ message: 'Mail could not be sent!' });
+			res.status(500).json({ success: false, message: 'Mail could not be sent!' });
 		};
 	} else res.status(200).json(mail);
 });
