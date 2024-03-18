@@ -72,7 +72,12 @@ const mailRouteLimiter = rateLimit({
 });
 
 app.post('/api/mail', mailRouteLimiter, (req, res) => {
-	const { to, subject, text } = req.body;
+	const { to, subject, text, access } = req.body;
+
+	if (!process.env.ACCESS_KEYS.split(',').includes(access)) {
+		return res.status(403).json({ success: false, message: 'Access denied!' });
+		console.log('Access denied!');
+	}
 
 	const mail = {
 		from: `"Arbeit Mail Hizmeti" <${SENDER_EMAIL}>`,
