@@ -4,7 +4,7 @@ const rateLimit = require("express-rate-limit");
 const nodemailer = require("nodemailer");
 const morgan = require("morgan");
 
-const app = express();
+require("dotenv").config();
 const ENV = process.env.ENVIRONMENT || "TEST";
 const SENDER_EMAIL = process.env.EMAIL;
 const SENDER_PASS = process.env.EMAIL_PASSWORD;
@@ -13,6 +13,7 @@ const SERV_PORT = process.env.EMAIL_PORT;
 
 const allowedIPs = process.env.ALLOWED_IPS.split(",");
 
+const app = express();
 app.enable("trust proxy");
 app.disable("x-powered-by");
 app.use(express.json());
@@ -32,6 +33,8 @@ app.use("/", rootLimiter);
 
 // Middleware function to check IP address
 const ipFilter = (req, res, next) => {
+  if (ENV === "TEST" || ENV === "TEST-MAIL") next();
+
   const clientIp = req.ip;
 
   if (allowedIPs.includes(clientIp)) {
@@ -55,6 +58,7 @@ const transporter = nodemailer.createTransport({
 const mailRouteLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
   max: 1,
+  message: "Please wait at least 1 minute before sending another request!",
 });
 
 app.post("/api/mail", ipFilter, mailRouteLimiter, (req, res) => {
@@ -62,7 +66,7 @@ app.post("/api/mail", ipFilter, mailRouteLimiter, (req, res) => {
 
   const mail = {
     from: `"Arbeit Mail Hizmeti" <${SENDER_EMAIL}>`,
-    recipient,
+    to: recipient,
     replyTo: "noreply@arbeit.studio",
     subject,
     text,
@@ -80,7 +84,10 @@ app.post("/api/mail", ipFilter, mailRouteLimiter, (req, res) => {
         .status(500)
         .json({ success: false, message: "Mail could not be sent!" });
     }
-  } else res.status(200).json(mail);
+  } else {
+    console.log(mail);
+    if (ENV === "TEST-MAIL") transporter.sendMail(mail);
+  }
 });
 
 app.get("/api/hello", (req, res) => {
