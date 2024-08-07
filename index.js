@@ -11,12 +11,7 @@ const SENDER_PASS = process.env.EMAIL_PASSWORD;
 const SERV_HOST = process.env.EMAIL_HOST;
 const SERV_PORT = process.env.EMAIL_PORT;
 
-const allowedIPs = process.env.ALLOWED_IPS.split(",").map((whole) => {
-  return {
-    key: whole.split(":")[0],
-    recipient: whole.split(":")[1],
-  };
-});
+const allowedIPs = process.env.ALLOWED_IPS.split(",");
 
 app.enable("trust proxy");
 app.disable("x-powered-by");
@@ -45,7 +40,6 @@ const ipFilter = (req, res, next) => {
     res.status(403).send("Access denied");
   }
 };
-app.use(ipFilter);
 
 const transporter = nodemailer.createTransport({
   host: SERV_HOST,
@@ -63,7 +57,7 @@ const mailRouteLimiter = rateLimit({
   max: 1,
 });
 
-app.post("/api/mail", mailRouteLimiter, (req, res) => {
+app.post("/api/mail", ipFilter, mailRouteLimiter, (req, res) => {
   const { subject, text, recipient } = req.body;
 
   const mail = {
