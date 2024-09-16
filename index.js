@@ -65,7 +65,7 @@ app.post("/api/mail", ipFilter, mailRouteLimiter, (req, res) => {
   const { subject, text, recipient } = req.body;
 
   const mail = {
-    from: `"Arbeit Mail Hizmeti" <${SENDER_EMAIL}>`,
+    from: `"Arbeit Mail Service" <${SENDER_EMAIL}>`,
     to: recipient,
     replyTo: "noreply@arbeit.studio",
     subject,
