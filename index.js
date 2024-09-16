@@ -61,7 +61,16 @@ const mailRouteLimiter = rateLimit({
   message: "Please wait at least 1 minute before sending another request!",
 });
 
-app.post("/api/mail", ipFilter, mailRouteLimiter, (req, res) => {
+const promiseSendingAMail = async (mail) => {
+  await new Promise((resolve, reject) => {
+    transporter.sendMail(mail, (err, info) => {
+      if (err)  reject(err);
+      else      resolve(info);
+    });
+  });
+}
+
+app.post("/api/mail", ipFilter, mailRouteLimiter, async (req, res) => {
   const { subject, text, recipient } = req.body;
 
   const mail = {
@@ -72,21 +81,36 @@ app.post("/api/mail", ipFilter, mailRouteLimiter, (req, res) => {
     text,
   };
 
+  await new Promise((resolve, reject) => {
+    transporter.verify((err, success) => {
+      if (err) {
+        console.error(err);
+        reject(error);
+      } else {
+        console.info("Server is ready to receive mails.");
+        resolve(success);
+      }
+    })
+  })
+
   if (ENV === "PROD") {
-    if (transporter.sendMail(mail)) {
+    try {
+      const info = await promiseSendingAMail(mail);
       console.info("Sent something:", mail);
-      res
-        .status(200)
-        .json({ success: true, message: "Mail sent successfully!" });
-    } else {
-      console.error("Failed to send:", mail);
-      res
-        .status(500)
-        .json({ success: false, message: "Mail could not be sent!" });
+      res.status(200).json({ success: true, message: "Mail sent successfully!" });
+    } catch (err) {
+      console.error("Failed to send:", mail, err);
+      res.status(500).json({ success: false, message: "Mail could not be sent!" });
     }
   } else {
     console.log(mail);
-    if (ENV === "TEST-MAIL") transporter.sendMail(mail);
+    if (ENV === "TEST-MAIL") {
+      try {
+        await promiseSendingAMail(mail);
+      } catch (err) {
+        console.error("Failed to send test mail:", mail, err);
+      }
+    }
   }
 });
 
