@@ -85,7 +85,7 @@ app.post("/api/mail", ipFilter, mailRouteLimiter, async (req, res) => {
     transporter.verify((err, success) => {
       if (err) {
         console.error(err);
-        reject(error);
+        reject(err);
       } else {
         console.info("Server is ready to receive mails.");
         resolve(success);
