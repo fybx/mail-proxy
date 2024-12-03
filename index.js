@@ -7,6 +7,7 @@ const morgan = require("morgan");
 require("dotenv").config();
 const ENV = process.env.ENVIRONMENT || "TEST";
 const SENDER_EMAIL = process.env.EMAIL;
+const USERNAME = process.env.USERNAME || SENDER_EMAIL;
 const SENDER_PASS = process.env.EMAIL_PASSWORD;
 const SERV_HOST = process.env.EMAIL_HOST;
 const SERV_PORT = process.env.EMAIL_PORT;
@@ -49,7 +50,7 @@ const transporter = nodemailer.createTransport({
   port: SERV_PORT,
   secure: true,
   auth: {
-    user: SENDER_EMAIL,
+    user: USERNAME,
     pass: SENDER_PASS,
   },
 });
